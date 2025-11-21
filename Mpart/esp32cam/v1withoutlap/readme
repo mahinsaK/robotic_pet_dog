@@ -1,0 +1,7 @@
+To run the script again:-
+
+cd /home/ubuntu/without_ros/esp32cam
+source .venv/bin/activate
+PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python without_lap/guesture_detector.py
+
+

@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🤖 Robot Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: white;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 12px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .status.connected {
+            background: rgba(40, 167, 69, 0.8);
+            border: 2px solid rgba(40, 167, 69, 1);
+        }
+
+        .status.disconnected {
+            background: rgba(220, 53, 69, 0.8);
+            border: 2px solid rgba(220, 53, 69, 1);
+        }
+
+        .connection-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .connection-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .connection-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .connection-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .arrow-section {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .arrow-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .arrow-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 8px;
+            max-width: 200px;
+            margin: 0 auto;
+        }
+
+        .arrow-btn {
+            width: 60px;
+            height: 60px;
+            border: none;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        .arrow-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .arrow-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .arrow-up {
+            grid-column: 2;
+            grid-row: 1;
+            background: linear-gradient(135deg, #007bff, #6610f2);
+            color: white;
+        }
+
+        .arrow-left {
+            grid-column: 1;
+            grid-row: 2;
+            background: linear-gradient(135deg, #6f42c1, #e83e8c);
+            color: white;
+        }
+
+        .arrow-down {
+            grid-column: 2;
+            grid-row: 3;
+            background: linear-gradient(135deg, #fd7e14, #e83e8c);
+            color: white;
+        }
+
+        .arrow-right {
+            grid-column: 3;
+            grid-row: 2;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 18px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-height: 70px;
+            justify-content: center;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-stand {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .btn-sit {
+            background: linear-gradient(135deg, #17a2b8, #6f42c1);
+            color: white;
+        }
+
+        .btn-walk {
+            background: linear-gradient(135deg, #007bff, #6610f2);
+            color: white;
+        }
+
+        .btn-distance {
+            background: linear-gradient(135deg, #20c997, #28a745);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+            color: white;
+        }
+
+        .btn-connect {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-disconnect {
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-voice {
+            background: linear-gradient(135deg, #6610f2, #007bff);
+            color: white;
+        }
+
+        .btn-voice.listening {
+            background: linear-gradient(135deg, #ff073a, #dc3545);
+        }
+
+        .btn-gesture {
+            background: linear-gradient(135deg, #fd7e14, #6610f2);
+            color: white;
+        }
+
+        .btn-gesture.active {
+            background: linear-gradient(135deg, #ff073a, #dc3545);
+        }
+
+        .btn-test {
+            background: linear-gradient(135deg, #6f42c1, #17a2b8);
+            color: white;
+        }
+
+        .btn-test.active {
+            background: linear-gradient(135deg, #ff073a, #dc3545);
+        }
+
+        .btn-dance {
+            background: linear-gradient(135deg, #e83e8c, #fd7e14);
+            color: white;
+        }
+
+        .music-controls {
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .music-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .music-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-music-play,
+        .btn-music-pause,
+        .btn-music-stop {
+            flex: 1;
+            min-height: 60px;
+        }
+
+        .btn-music-play {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .btn-music-pause {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: white;
+        }
+
+        .btn-music-stop {
+            background: linear-gradient(135deg, #dc3545, #6f42c1);
+            color: white;
+        }
+
+        .output {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .output-line {
+            margin: 3px 0;
+            line-height: 1.4;
+        }
+
+        .output-line.robot {
+            color: #00d4ff;
+        }
+
+        .output-line.response {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .output-line.error {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .output-line.voice {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .output-line.gesture {
+            color: #ff9500;
+            font-weight: bold;
+        }
+
+        .output-line.servo {
+            color: #00b7eb;
+            font-weight: bold;
+        }
+
+        .timestamp {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 10px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @keyframes buttonPress {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(0.95);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .servo-controls {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .servo-controls.active {
+            display: block;
+        }
+
+        .servo-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .servo-section h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .servo-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .servo-label {
+            width: 120px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .servo-input {
+            flex: 1;
+            padding: 6px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #00ff88;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .servo-input:focus {
+            outline: none;
+            border-color: #17a2b8;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .servo-value {
+            width: 50px;
+            text-align: right;
+            font-size: 12px;
+            color: #00ff88;
+        }
+
+        .dance-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            margin-bottom: 10px;
+            appearance: none;
+        }
+
+        @media (max-width: 350px) {
+            .container {
+                padding: 15px;
+            }
+
+            .btn {
+                padding: 15px;
+                font-size: 14px;
+            }
+
+            .arrow-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            .servo-label {
+                width: 100px;
+                font-size: 11px;
+            }
+
+            .servo-value {
+                width: 40px;
+                font-size: 11px;
+            }
+
+            .servo-input {
+                padding: 4px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Robot Control</h1>
+            <div style="font-size: 14px; opacity: 0.8;">Mobile Interface</div>
+        </div>
+        <div class="connection-section">
+            <input type="text" id="serverUrl" class="connection-input" placeholder="ws://robot-ip:8765"
+                value="ws://localhost:8765">
+            <div class="connection-buttons">
+                <button class="btn btn-connect" onclick="connect()" id="connectBtn">
+                    <div>🔌</div>
+                    <div>Connect</div>
+                </button>
+                <button class="btn btn-disconnect" onclick="disconnect()" id="disconnectBtn" disabled>
+                    <div>🔌</div>
+                    <div>Disconnect</div>
+                </button>
+            </div>
+        </div>
+        <div class="status disconnected" id="connectionStatus">Disconnected</div>
+        <div class="arrow-section">
+            <div class="arrow-title">🎮 Robot Controls</div>
+            <div class="arrow-grid">
+                <button class="arrow-btn arrow-up" id="arrowUp" disabled>⬆️</button>
+                <button class="arrow-btn arrow-left" id="arrowLeft" disabled>⬅️</button>
+                <button class="arrow-btn arrow-down" id="arrowDown" disabled>⬇️</button>
+                <button class="arrow-btn arrow-right" id="arrowRight" disabled>➡️</button>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn btn-stand" onclick="sendCommand('stand')" id="standBtn" disabled>
+                <div>🧍</div>
+                <div>Stand</div>
+            </button>
+            <button class="btn btn-sit" onclick="sendCommand('sit')" id="sitBtn" disabled>
+                <div>🪑</div>
+                <div>Sit</div>
+            </button>
+            <button class="btn btn-walk" onclick="sendCommand('walk')" id="walkBtn" disabled>
+                <div>🚶</div>
+                <div>SafeWay</div>
+            </button>
+            <button class="btn btn-distance" onclick="sendCommand('distance')" id="distanceBtn" disabled>
+                <div>📏</div>
+                <div>Distance</div>
+            </button>
+            <button class="btn btn-stop full-width" onclick="sendCommand('q')" id="stopBtn" disabled>
+                <div>🛑</div>
+                <div>EMERGENCY STOP</div>
+            </button>
+            <button class="btn btn-voice full-width" onclick="toggleVoiceCommand()" id="voiceBtn" disabled>
+                <div>🎙️</div>
+                <div id="voiceBtnText">Voice Command</div>
+            </button>
+            <button class="btn btn-gesture full-width" onclick="toggleGestureControl()" id="gestureBtn" disabled>
+                <div>✋</div>
+                <div id="gestureBtnText">Gesture Control</div>
+            </button>
+            <button class="btn btn-test full-width" onclick="toggleTestMode()" id="testBtn" disabled>
+                <div>🔧</div>
+                <div id="testBtnText">Test Servos</div>
+            </button>
+            <select id="danceMode" class="dance-select full-width" disabled>
+                <option value="1">Dance 1</option>
+                <option value="2">Dance 2</option>
+                <option value="3">Dance 3</option>
+                <option value="4">Dance 4</option>
+            </select>
+            <button class="btn btn-dance full-width" onclick="sendDanceCommand()" id="danceBtn" disabled>
+                <div>💃</div>
+                <div>Dance</div>
+            </button>
+        </div>
+        <div class="music-controls">
+            <div class="music-title">🎵 Music Control</div>
+            <div class="music-buttons">
+                <button class="btn btn-music-play" onclick="sendCommand('music_play')" id="musicPlayBtn" disabled>
+                    <div>▶️</div>
+                    <div>Play</div>
+                </button>
+                <button class="btn btn-music-pause" onclick="sendCommand('music_pause')" id="musicPauseBtn" disabled>
+                    <div>⏸️</div>
+                    <div>Pause</div>
+                </button>
+                <button class="btn btn-music-stop" onclick="sendCommand('music_stop')" id="musicStopBtn" disabled>
+                    <div>🛑</div>
+                    <div>Stop</div>
+                </button>
+            </div>
+        </div>
+        <div class="servo-controls" id="servoControls">
+            <div class="servo-section">
+                <h3>🦵 Front Left Leg</h3>
+                <div class="servo-control">
+                    <span class="servo-label">Ch0: FL Shoulder</span>
+                    <input type="number" class="servo-input" id="servoInput0" min="0" max="270" value="200" step="1"
+                        oninput="updateServoValue(0)">
+                    <span class="servo-value" id="servoValue0">200°</span>
+                </div>
+                <div class="servo-control">
+                    <span class="servo-label">Ch1: FL Thigh</span>
+                    <input type="number" class="servo-input" id="servoInput1" min="0" max="270" value="10" step="1"
+                        oninput="updateServoValue(1)">
+                    <span class="servo-value" id="servoValue1">10°</span>
+                </div>
+                <div class="servo-control">
+                    <span class="servo-label">Ch2: FL Knee</span>
+                    <input type="number" class="servo-input" id="servoInput2" min="0" max="270" value="145" step="1"
+                        oninput="updateServoValue(2)">
+                    <span class="servo-value" id="servoValue2">145°</span>
+                </div>
+            </div>
+            <div class="servo-section">
+                <h3>🦵 Front Right Leg</h3>
+                <div class="servo-control">
+                    <span class="servo-label">Ch4: FR Shoulder</span>
+                    <input type="number" class="servo-input" id="servoInput4" min="0" max="270" value="100" step="1"
+                        oninput="updateServoValue(4)">
+                    <span class="servo-value" id="servoValue4">100°</span>
+                </div>
+                <div class="servo-control">
+                    <span class="servo-label">Ch5: FR Thigh</span>
+                    <input type="number" class="servo-input" id="servoInput5" min="0" max="270" value="115" step="1"
+                        oninput="updateServoValue(5)">
+                    <span class="servo-value" id="servoValue5">115°</span>
+                </div>
+                <div class="servo-control">
+                    <span class="servo-label">Ch6: FR Knee</span>
+                    <input type="number" class="servo-input" id="servoInput6" min="0" max="180" value="10" step="1"
+                        oninput="updateServoValue(6)">
+                    <span class="servo-value" id="servoValue6">10°</span>
+                </div>
+            </div>
+            <div class="servo-section">
+                <h3>🦵 Rear Left Leg</h3>
+                <div class="servo-control">
+                    <span class="servo-label">Ch8: RL Shoulder</span>
+                    <input type="number" class="servo-input" id="servoInput8" min="0" max="180" value="150" step="1"
+                        oninput="updateServoValue(8)">
+                    <span class="servo-value" id="servoValue8">150°</span>
+                </div>
+                <div class="servo-control">
+                    <span class="servo-label">Ch9: RL Thigh</span>
+                    <input type="number" class="servo-input" id="servoInput9" min="0" max="270" value="19" step="1"
+                        oninput="updateServoValue(9)">
+                    <span class="servo-value" id="servoValue9">19°</span>
+                </div>
+                <div class="servo-control">
+                    <span class="servo-label">Ch10: RL Knee</span>
+                    <input type="number" class="servo-input" id="servoInput10" min="0" max="180" value="150" step="1"
+                        oninput="updateServoValue(10)">
+                    <span class="servo-value" id="servoValue10">150°</span>
+                </div>
+            </div>
+            <div class="servo-section">
+                <h3>🦵 Rear Right Leg</h3>
+                <div class="servo-control">
+                    <span class="servo-label">Ch12: RR Shoulder</span>
+                    <input type="number" class="servo-input" id="servoInput12" min="0" max="180" value="120" step="1"
+                        oninput="updateServoValue(12)">
+                    <span class="servo-value" id="servoValue12">120°</span>
+                </div>
+                <div class="servo-control">
+                    <span class="servo-label">Ch13: RR Thigh</span>
+                    <input type="number" class="servo-input" id="servoInput13" min="0" max="270" value="110" step="1"
+                        oninput="updateServoValue(13)">
+                    <span class="servo-value" id="servoValue13">110°</span>
+                </div>
+                <div class="servo-control">
+                    <span class="servo-label">Ch14: RR Knee</span>
+                    <input type="number" class="servo-input" id="servoInput14" min="0" max="180" value="5" step="1"
+                        oninput="updateServoValue(14)">
+                    <span class="servo-value" id="servoValue14">5°</span>
+                </div>
+            </div>
+        </div>
+        <div class="output" id="output">
+            <div class="output-line">📱 Robot Control Interface Ready</div>
+            <div class="output-line">🔌 Connect to start controlling the robot</div>
+        </div>
+    </div>
+    <script>
+        let websocket = null;
+        let isConnected = false;
+        let connectionCheckInterval = null;
+        let recognition = null;
+        let isListening = false;
+        let isGestureControl = false;
+        let isTestMode = false;
+        let activeCommand = null;
+        const commandMappings = {
+            'stand': ['stand', 'stand up', 'get up'],
+            'sit': ['sit', 'sit down'],
+            'walk': ['walk', 'walk forward', 'move forward', 'go forward'],
+            'backward': ['walk backward', 'move backward', 'go backward', 'back'],
+            'right': ['turn right', 'go right'],
+            'left': ['turn left', 'go left'],
+            'distance': ['distance', 'check distance', 'measure distance'],
+            'music_play': ['play music', 'start music', 'resume music', 'music play'],
+            'music_pause': ['pause music', 'pause', 'music pause'],
+            'music_stop': ['stop music', 'music stop'],
+            'stop': ['stop', 'emergency stop', 'halt', 'q']
+        };
+        const servoConfig = {
+            0: { name: "FL Shoulder", max: 270, default: 200 },
+            1: { name: "FL Thigh", max: 270, default: 10 },
+            2: { name: "FL Knee", max: 270, default: 145 },
+            4: { name: "FR Shoulder", max: 270, default: 100 },
+            5: { name: "FR Thigh", max: 270, default: 115 },
+            6: { name: "FR Knee", max: 180, default: 10 },
+            8: { name: "RL Shoulder", max: 180, default: 150 },
+            9: { name: "RL Thigh", max: 270, default: 19 },
+            10: { name: "RL Knee", max: 180, default: 150 },
+            12: { name: "RR Shoulder", max: 180, default: 120 },
+            13: { name: "RR Thigh", max: 270, default: 110 },
+            14: { name: "RR Knee", max: 180, default: 5 }
+        };
+        function addToOutput(message, type = 'info') {
+            const output = document.getElementById('output');
+            const line = document.createElement('div');
+            line.className = `output-line ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            line.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+            while (output.children.length > 50) {
+                output.removeChild(output.firstChild);
+            }
+        }
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const controlButtons = [
+                'standBtn', 'sitBtn', 'walkBtn', 'distanceBtn', 'stopBtn',
+                'arrowUp', 'arrowDown', 'arrowLeft', 'arrowRight', 'voiceBtn', 'gestureBtn', 'testBtn', 'danceBtn',
+                'musicPlayBtn', 'musicPauseBtn', 'musicStopBtn'
+            ];
+            const danceModeSelect = document.getElementById('danceMode');
+            if (status === 'connected') {
+                isConnected = true;
+                statusElement.textContent = '✅ Connected to Robot Server';
+                statusElement.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                controlButtons.forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) btn.disabled = false;
+                });
+                if (danceModeSelect) danceModeSelect.disabled = false;
+                if (connectionCheckInterval) {
+                    clearInterval(connectionCheckInterval);
+                }
+                connectionCheckInterval = setInterval(checkConnection, 1000);
+            } else {
+                isConnected = false;
+                statusElement.textContent = '❌ Disconnected from Server';
+                statusElement.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                controlButtons.forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) btn.disabled = true;
+                });
+                if (danceModeSelect) danceModeSelect.disabled = true;
+                if (isListening) {
+                    stopVoiceCommand();
+                }
+                if (isGestureControl) {
+                    toggleGestureControl();
+                }
+                if (isTestMode) {
+                    toggleTestMode();
+                }
+                activeCommand = null;
+                if (connectionCheckInterval) {
+                    clearInterval(connectionCheckInterval);
+                    connectionCheckInterval = null;
+                }
+            }
+        }
+        function checkConnection() {
+            if (websocket && websocket.readyState !== WebSocket.OPEN) {
+                addToOutput('🔌 Connection lost, attempting to reconnect...', 'error');
+                updateConnectionStatus('disconnected');
+                websocket = null;
+                setTimeout(() => {
+                    if (!isConnected) {
+                        connect();
+                    }
+                }, 2000);
+            }
+        }
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+            if (!serverUrl) {
+                addToOutput('❌ Please enter server URL', 'error');
+                return;
+            }
+            if (websocket) {
+                websocket.close();
+                websocket = null;
+            }
+            addToOutput(`🔌 Connecting to ${serverUrl}...`);
+            try {
+                websocket = new WebSocket(serverUrl);
+                websocket.onopen = function () {
+                    addToOutput('✅ Connected to robot server!', 'response');
+                    updateConnectionStatus('connected');
+                };
+                websocket.onmessage = function (event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'response' || data.type === 'robot_response') {
+                            const isSuccess = data.status !== 'error';
+                            const icon = isSuccess ? '✅' : '❌';
+                            addToOutput(`${icon} ${data.message}`, isSuccess ? 'response' : 'error');
+                        } else if (data.type === 'status') {
+                            addToOutput(`ℹ️ ${data.message}`, 'robot');
+                        } else if (data.type === 'error') {
+                            addToOutput(`❌ ${data.message}`, 'error');
+                        } else if (data.type === 'gesture_status') {
+                            addToOutput(`✋ ${data.message}`, 'gesture');
+                        } else if (data.type === 'servo_update') {
+                            const { channel, angle, name } = data;
+                            const input = document.getElementById(`servoInput${channel}`);
+                            const valueDisplay = document.getElementById(`servoValue${channel}`);
+                            if (input && valueDisplay) {
+                                input.value = angle;
+                                valueDisplay.textContent = `${angle}°`;
+                                addToOutput(`🔧 Servo Ch${channel} (${name}) set to ${angle}°`, 'servo');
+                            }
+                        } else {
+                            addToOutput(`📨 ${data.message || JSON.stringify(data)}`, 'robot');
+                        }
+                    } catch (e) {
+                        addToOutput(`📨 ${event.data}`, 'robot');
+                    }
+                };
+                websocket.onclose = function () {
+                    addToOutput('🔌 Connection closed', 'error');
+                    updateConnectionStatus('disconnected');
+                    websocket = null;
+                };
+                websocket.onerror = function () {
+                    addToOutput('❌ Connection error - check server and network', 'error');
+                    updateConnectionStatus('disconnected');
+                };
+            } catch (error) {
+                addToOutput(`❌ Failed to connect: ${error.message}`, 'error');
+                updateConnectionStatus('disconnected');
+            }
+        }
+        function disconnect() {
+            if (websocket) {
+                websocket.close();
+                websocket = null;
+            }
+            updateConnectionStatus('disconnected');
+            addToOutput('🔌 Manually disconnected', 'robot');
+        }
+        function sendCommand(command) {
+            if (!isConnected || !websocket || websocket.readyState !== WebSocket.OPEN) {
+                addToOutput('❌ Not connected to server', 'error');
+                updateConnectionStatus('disconnected');
+                return;
+            }
+            const message = {
+                type: 'robot_command',
+                command: command
+            };
+            try {
+                websocket.send(JSON.stringify(message));
+                addToOutput(`📤 Command sent: ${command.toUpperCase()}`);
+            } catch (error) {
+                addToOutput(`❌ Failed to send command: {error.message}`, 'error');
+                updateConnectionStatus('disconnected');
+            }
+        }
+        function sendDanceCommand() {
+            const mode = document.getElementById('danceMode').value;
+            if (!isConnected || !websocket || websocket.readyState !== WebSocket.OPEN) {
+                addToOutput('❌ Not connected to server', 'error');
+                updateConnectionStatus('disconnected');
+                return;
+            }
+            const message = {
+                type: 'robot_command',
+                command: 'dance',
+                mode: parseInt(mode)
+            };
+            try {
+                websocket.send(JSON.stringify(message));
+                addToOutput(`📤 Dance mode ${mode} sent`);
+            } catch (error) {
+                addToOutput(`❌ Failed to send dance command: ${error.message}`, 'error');
+                updateConnectionStatus('disconnected');
+            }
+        }
+        function startCommand(command) {
+            if (activeCommand === command) return;
+            activeCommand = command;
+            sendCommand(command);
+        }
+        function stopCommand() {
+            if (activeCommand && activeCommand !== 'q') {
+                sendCommand('q');
+                activeCommand = null;
+            }
+        }
+        function toggleVoiceCommand() {
+            if (!isConnected) {
+                addToOutput('❌ Must be connected to use voice commands', 'error');
+                return;
+            }
+            if (!isListening) {
+                startVoiceCommand();
+            } else {
+                stopVoiceCommand();
+            }
+        }
+        function toggleGestureControl() {
+            if (!isConnected) {
+                addToOutput('❌ Must be connected to use gesture control', 'error');
+                return;
+            }
+            isGestureControl = !isGestureControl;
+            const gestureBtn = document.getElementById('gestureBtn');
+            const gestureBtnText = document.getElementById('gestureBtnText');
+            if (isGestureControl) {
+                gestureBtn.classList.add('active');
+                gestureBtnText.textContent = 'Stop Gesture Control';
+                addToOutput('✋ Gesture control started', 'gesture');
+            } else {
+                gestureBtn.classList.remove('active');
+                gestureBtnText.textContent = 'Gesture Control';
+                addToOutput('✋ Gesture control stopped', 'gesture');
+                stopCommand();
+            }
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify({
+                    type: 'gesture_control',
+                    enabled: isGestureControl
+                }));
+            }
+        }
+        function toggleTestMode() {
+            if (!isConnected) {
+                addToOutput('❌ Must be connected to use test mode', 'error');
+                return;
+            }
+            isTestMode = !isTestMode;
+            const testBtn = document.getElementById('testBtn');
+            const testBtnText = document.getElementById('testBtnText');
+            const servoControls = document.getElementById('servoControls');
+            if (isTestMode) {
+                testBtn.classList.add('active');
+                testBtnText.textContent = 'Stop Test Mode';
+                servoControls.classList.add('active');
+                addToOutput('🔧 Test mode started', 'servo');
+            } else {
+                testBtn.classList.remove('active');
+                testBtnText.textContent = 'Test Servos';
+                servoControls.classList.remove('active');
+                addToOutput('🔧 Test mode stopped', 'servo');
+                sendCommand('stand'); // Reset to standing position
+            }
+        }
+        function updateServoValue(channel) {
+            if (!isConnected || !websocket || websocket.readyState !== WebSocket.OPEN) {
+                addToOutput('❌ Not connected to server', 'error');
+                updateConnectionStatus('disconnected');
+                return;
+            }
+            const input = document.getElementById(`servoInput${channel}`);
+            const valueDisplay = document.getElementById(`servoValue${channel}`);
+            let angle = parseInt(input.value);
+            const maxAngle = servoConfig[channel].max;
+            if (isNaN(angle) || angle < 0) angle = 0;
+            if (angle > maxAngle) angle = maxAngle;
+            input.value = angle;
+            valueDisplay.textContent = `${angle}°`;
+            const message = {
+                type: 'servo_angle',
+                channel: channel,
+                angle: angle
+            };
+            try {
+                websocket.send(JSON.stringify(message));
+                addToOutput(`📤 Servo Ch${channel} (${servoConfig[channel].name}) set to ${angle}°`, 'servo');
+            } catch (error) {
+                addToOutput(`❌ Failed to send servo command: ${error.message}`, 'error');
+                updateConnectionStatus('disconnected');
+            }
+        }
+        function startVoiceCommand() {
+            if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+                addToOutput('❌ Speech recognition not supported in this browser', 'error');
+                return;
+            }
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            recognition.onstart = function () {
+                isListening = true;
+                const voiceBtn = document.getElementById('voiceBtn');
+                voiceBtn.classList.add('listening');
+                document.getElementById('voiceBtnText').textContent = 'Listening...';
+                addToOutput('🎙️ Voice command started, speak now...', 'voice');
+            };
+            recognition.onresult = function (event) {
+                const transcript = event.results[0][0].transcript.toLowerCase().trim();
+                addToOutput(`🎙️ Heard: "${transcript}"`, 'voice');
+                let matchedCommand = null;
+                for (const [command, phrases] of Object.entries(commandMappings)) {
+                    if (phrases.some(phrase => transcript.includes(phrase))) {
+                        matchedCommand = command;
+                        break;
+                    }
+                }
+                if (matchedCommand) {
+                    sendCommand(matchedCommand);
+                    addToOutput(`📤 Mapped to command: ${matchedCommand.toUpperCase()}`, 'voice');
+                } else {
+                    addToOutput(`❌ Unrecognized command: "${transcript}"`, 'error');
+                }
+            };
+            recognition.onerror = function (event) {
+                addToOutput(`❌ Voice recognition error: ${event.error}`, 'error');
+                stopVoiceCommand();
+            };
+            recognition.onend = function () {
+                if (isListening) {
+                    recognition.start();
+                }
+            };
+            recognition.start();
+        }
+        function stopVoiceCommand() {
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+            }
+            isListening = false;
+            const voiceBtn = document.getElementById('voiceBtn');
+            voiceBtn.classList.remove('listening');
+            document.getElementById('voiceBtnText').textContent = 'Voice Command';
+            addToOutput('🎙️ Voice command stopped', 'voice');
+        }
+        function setupArrowButtonEvents() {
+            const buttons = [
+                { id: 'arrowUp', command: 'walk' },
+                { id: 'arrowDown', command: 'backward' },
+                { id: 'arrowLeft', command: 'left' },
+                { id: 'arrowRight', command: 'right' }
+            ];
+            buttons.forEach(({ id, command }) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    startCommand(command);
+                });
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startCommand(command);
+                }, { passive: false });
+                btn.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    stopCommand();
+                });
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    stopCommand();
+                }, { passive: false });
+                btn.addEventListener('touchcancel', (e) => {
+                    e.preventDefault();
+                    stopCommand();
+                }, { passive: false });
+                btn.addEventListener('mouseleave', (e) => {
+                    e.preventDefault();
+                    stopCommand();
+                });
+            });
+        }
+        document.addEventListener('keydown', function (event) {
+            if (!isConnected) return;
+            switch (event.key) {
+                case 'ArrowUp':
+                    sendCommand('walk');
+                    event.preventDefault();
+                    break;
+                case 'ArrowDown':
+                    sendCommand('backward');
+                    event.preventDefault();
+                    break;
+                case 'ArrowLeft':
+                    sendCommand('left');
+                    event.preventDefault();
+                    break;
+                case 'ArrowRight':
+                    sendCommand('right');
+                    event.preventDefault();
+                    break;
+                case ' ':
+                    sendCommand('q');
+                    event.preventDefault();
+                    break;
+            }
+        });
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+        window.addEventListener('load', function () {
+            updateConnectionStatus('disconnected');
+            setupArrowButtonEvents();
+        });
+    </script>
+
+</html>

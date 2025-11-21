@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>🤖 Easy Robot Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:active {
+            background: #004085;
+        }
+
+        .emergency {
+            background: #dc3545 !important;
+        }
+
+        .emergency:hover {
+            background: #c82333 !important;
+        }
+
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            height: 200px;
+            padding: 10px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🤖 Easy Robot Control</h1>
+
+        <div id="status" class="status disconnected">
+            ❌ Disconnected
+        </div>
+
+        <div>
+            <input type="text" id="serverUrl" value="ws://localhost:8765" style="width: 70%; padding: 8px;">
+            <button onclick="connect()" style="width: 25%;">🔗 Connect</button>
+        </div>
+
+        <div class="buttons">
+            <button onclick="sendCommand('stand')">🧍 Stand</button>
+            <button onclick="sendCommand('sit')">🪑 Sit</button>
+            <button onclick="sendCommand('walk')">🚶 Walk</button>
+
+            <button onclick="sendCommand('left')">⬅️ Left</button>
+            <button onclick="sendCommand('stop')" class="emergency">🛑 Stop</button>
+            <button onclick="sendCommand('right')">➡️ Right</button>
+
+            <button onclick="sendCommand('backward')">🔙 Back</button>
+            <button onclick="sendCommand('distance')">📏 Distance</button>
+            <button onclick="sendCommand('q')" class="emergency">🔴 Shutdown</button>
+        </div>
+
+        <div>
+            <strong>📋 Message Log:</strong>
+            <div class="log" id="log"></div>
+            <button onclick="clearLog()" style="margin-top: 5px;">🧹 Clear Log</button>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 12px; color: #666;">
+            <strong>🎮 Keyboard Shortcuts:</strong><br>
+            W=Walk, S=Sit, A=Left, D=Right, X=Stand, Q=Stop, Space=Distance
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let isConnected = false;
+
+        function updateStatus(connected, message = '') {
+            const statusDiv = document.getElementById('status');
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.textContent = `✅ Connected ${message}`;
+                isConnected = true;
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = `❌ Disconnected ${message}`;
+                isConnected = false;
+            }
+        }
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function connect() {
+            const url = document.getElementById('serverUrl').value;
+
+            if (socket) {
+                socket.close();
+            }
+
+            log(`🔄 Connecting to ${url}...`);
+            updateStatus(false, '(Connecting...)');
+
+            try {
+                socket = new WebSocket(url);
+
+                socket.onopen = function () {
+                    updateStatus(true, `to ${url}`);
+                    log(`✅ Connected successfully!`);
+                };
+
+                socket.onmessage = function (event) {
+                    log(`📨 Robot: ${event.data}`);
+                };
+
+                socket.onclose = function () {
+                    updateStatus(false, '(Connection closed)');
+                    log(`❌ Connection closed`);
+                };
+
+                socket.onerror = function (error) {
+                    updateStatus(false, '(Connection error)');
+                    log(`💥 Connection error`);
+                    console.error(error);
+                };
+
+            } catch (error) {
+                updateStatus(false, '(Failed to connect)');
+                log(`❌ Failed to connect: ${error.message}`);
+            }
+        }
+
+        function sendCommand(command) {
+            if (!isConnected || !socket) {
+                log(`❌ Not connected! Please connect first.`);
+                return;
+            }
+
+            log(`📤 Sending: ${command}`);
+            socket.send(command);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function (event) {
+            if (!isConnected) return;
+
+            const key = event.key.toLowerCase();
+            const commands = {
+                'w': 'walk',
+                's': 'sit',
+                'a': 'left',
+                'd': 'right',
+                'x': 'stand',
+                'q': 'stop',
+                ' ': 'distance'
+            };
+
+            if (commands[key]) {
+                event.preventDefault();
+                sendCommand(commands[key]);
+            }
+        });
+
+        // Auto-connect on page load
+        window.onload = function () {
+            log('🚀 Easy Robot Control loaded');
+            log('💡 Click Connect to start controlling the robot');
+        };
+    </script>
+</body>
+
+</html>

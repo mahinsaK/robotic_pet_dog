@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Static IP Robot Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+
+        .connection-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .connection-panel h3 {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.3em;
+        }
+
+        .server-option {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .server-option label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .server-option input[type="radio"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .server-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .custom-url-input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+
+        .custom-url-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .connect-btn {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .connect-btn:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .connect-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px 0;
+        }
+
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-value {
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .status-connected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .status-connecting {
+            background: #ff9800;
+            color: white;
+        }
+
+        .controls-grid {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .control-btn.emergency {
+            background: rgba(244, 67, 54, 0.8);
+            border-color: #f44336;
+            grid-column: 1 / -1;
+        }
+
+        .control-btn.emergency:hover:not(:disabled) {
+            background: rgba(244, 67, 54, 1);
+        }
+
+        .log-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+            display: none;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .log-entry.info {
+            background: rgba(33, 150, 243, 0.2);
+        }
+
+        .log-entry.success {
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .log-entry.error {
+            background: rgba(244, 67, 54, 0.2);
+        }
+
+        .log-entry.warning {
+            background: rgba(255, 152, 0, 0.2);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            .controls-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .control-btn {
+                padding: 15px;
+                font-size: 14px;
+                min-height: 70px;
+            }
+        }
+
+        .ip-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 SpotMicro Robot</h1>
+            <div class="subtitle">Static IP Control Interface</div>
+            <div class="ip-display" id="currentIp">Detecting IP addresses...</div>
+        </div>
+
+        <div class="connection-panel" id="connectionPanel">
+            <h3>🔌 Connection Setup</h3>
+
+            <div class="server-option">
+                <label>
+                    <input type="radio" name="serverType" value="direct" checked>
+                    🏠 Direct Connection (Current Network)
+                </label>
+                <div class="server-details">
+                    Connects directly to robot on local network.<br>
+                    <strong>WebSocket:</strong> <span id="directWsUrl">ws://10.236.10.48:8765</span>
+                </div>
+            </div>
+
+            <div class="server-option">
+                <label>
+                    <input type="radio" name="serverType" value="relay">
+                    🌐 Relay Server (Static IP)
+                </label>
+                <div class="server-details">
+                    Connects via relay server for stable connection.<br>
+                    <strong>Benefits:</strong> Works from anywhere, stable IP
+                </div>
+                <input type="text" class="custom-url-input" id="relayUrl" placeholder="ws://your-relay-server.com:8765"
+                    value="ws://localhost:8765">
+            </div>
+
+            <div class="server-option">
+                <label>
+                    <input type="radio" name="serverType" value="custom">
+                    ⚙️ Custom WebSocket URL
+                </label>
+                <input type="text" class="custom-url-input" id="customUrl" placeholder="ws://custom-server:port">
+            </div>
+
+            <button class="connect-btn" id="connectBtn" onclick="connectToRobot()">
+                🔌 Connect to Robot
+            </button>
+        </div>
+
+        <div class="status-panel" id="statusPanel" style="display: none;">
+            <div class="status-item">
+                <span>Connection Status:</span>
+                <span id="connectionStatus" class="status-value status-disconnected">Disconnected</span>
+            </div>
+            <div class="status-item">
+                <span>Server URL:</span>
+                <span id="currentUrl" class="status-value">-</span>
+            </div>
+            <div class="status-item">
+                <span>Last Response:</span>
+                <span id="lastResponse" class="status-value">-</span>
+            </div>
+        </div>
+
+        <div class="controls-grid" id="controlsGrid">
+            <button class="control-btn" onclick="sendCommand('stand')" id="standBtn">
+                🏠<br>Stand
+            </button>
+            <button class="control-btn" onclick="sendCommand('sit')" id="sitBtn">
+                🪑<br>Sit
+            </button>
+            <button class="control-btn" onclick="sendCommand('walk')" id="walkBtn">
+                🚶<br>Walk
+            </button>
+            <button class="control-btn" onclick="sendCommand('backward')" id="backwardBtn">
+                ⬅️<br>Backward
+            </button>
+            <button class="control-btn" onclick="sendCommand('right')" id="rightBtn">
+                ↪️<br>Turn Right
+            </button>
+            <button class="control-btn" onclick="sendCommand('left')" id="leftBtn">
+                ↩️<br>Turn Left
+            </button>
+            <button class="control-btn" onclick="sendCommand('distance')" id="distanceBtn">
+                📏<br>Distance
+            </button>
+            <button class="control-btn emergency" onclick="emergencyStop()" id="stopBtn">
+                🛑 EMERGENCY STOP
+            </button>
+        </div>
+
+        <div class="log-panel" id="logPanel">
+            <strong>📋 Connection Log:</strong>
+            <div id="logContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let isConnected = false;
+        let isConnecting = false;
+        let currentUrl = '';
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 5;
+        let reconnectDelay = 3000;
+
+        // Detect current IP addresses and update display
+        function detectIPAddresses() {
+            // Common IP patterns for local networks
+            const ipPatterns = ['10.236.10.48', '10.21.12.48', '192.168.'];
+            const currentHost = window.location.hostname;
+
+            let displayText = `Current Page: ${window.location.host}`;
+            if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+                displayText += `\nDetected Network: ${currentHost}`;
+                // Update direct connection URL based on current host
+                const wsUrl = `ws://${currentHost}:8765`;
+                document.getElementById('directWsUrl').textContent = wsUrl;
+            }
+
+            document.getElementById('currentIp').textContent = displayText;
+        }
+
+        // Initialize page
+        detectIPAddresses();
+
+        function addLog(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+
+            logContent.appendChild(logEntry);
+            logContent.scrollTop = logContent.scrollHeight;
+
+            // Keep only last 50 entries
+            while (logContent.children.length > 50) {
+                logContent.removeChild(logContent.firstChild);
+            }
+
+            // Update last response
+            document.getElementById('lastResponse').textContent = message.substring(0, 30) + '...';
+        }
+
+        function updateConnectionStatus(status, url = '') {
+            const statusElement = document.getElementById('connectionStatus');
+            const urlElement = document.getElementById('currentUrl');
+            const connectionPanel = document.getElementById('connectionPanel');
+            const statusPanel = document.getElementById('statusPanel');
+            const controlsGrid = document.getElementById('controlsGrid');
+            const logPanel = document.getElementById('logPanel');
+            const connectBtn = document.getElementById('connectBtn');
+
+            statusElement.textContent = status;
+            statusElement.className = `status-value ${status === 'Connected' ? 'status-connected' :
+                    status === 'Connecting' ? 'status-connecting' :
+                        'status-disconnected'
+                }`;
+
+            if (url) {
+                urlElement.textContent = url.length > 40 ? url.substring(0, 37) + '...' : url;
+            }
+
+            if (status === 'Connected') {
+                connectionPanel.style.display = 'none';
+                statusPanel.style.display = 'block';
+                controlsGrid.style.display = 'grid';
+                logPanel.style.display = 'block';
+                enableControls(true);
+            } else if (status === 'Connecting') {
+                connectBtn.disabled = true;
+                connectBtn.textContent = '🔄 Connecting...';
+                statusPanel.style.display = 'block';
+            } else {
+                connectionPanel.style.display = 'block';
+                statusPanel.style.display = status !== 'Disconnected';
+                controlsGrid.style.display = 'none';
+                logPanel.style.display = 'none';
+                connectBtn.disabled = false;
+                connectBtn.textContent = '🔌 Connect to Robot';
+                enableControls(false);
+            }
+        }
+
+        function enableControls(enabled) {
+            const buttons = document.querySelectorAll('.control-btn');
+            buttons.forEach(btn => {
+                btn.disabled = !enabled;
+            });
+        }
+
+        function getSelectedServerUrl() {
+            const selectedType = document.querySelector('input[name="serverType"]:checked').value;
+
+            switch (selectedType) {
+                case 'direct':
+                    const directUrl = document.getElementById('directWsUrl').textContent;
+                    return directUrl;
+                case 'relay':
+                    return document.getElementById('relayUrl').value.trim();
+                case 'custom':
+                    return document.getElementById('customUrl').value.trim();
+                default:
+                    return '';
+            }
+        }
+
+        function connectToRobot() {
+            if (isConnecting) return;
+
+            const url = getSelectedServerUrl();
+            if (!url) {
+                addLog('Please enter a WebSocket URL', 'error');
+                return;
+            }
+
+            if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+                addLog('WebSocket URL must start with ws:// or wss://', 'error');
+                return;
+            }
+
+            currentUrl = url;
+            isConnecting = true;
+            reconnectAttempts = 0;
+
+            addLog(`Attempting to connect to: ${url}`, 'info');
+            updateConnectionStatus('Connecting', url);
+
+            connectWebSocket();
+        }
+
+        function connectWebSocket() {
+            try {
+                socket = new WebSocket(currentUrl);
+
+                socket.onopen = function (event) {
+                    isConnected = true;
+                    isConnecting = false;
+                    reconnectAttempts = 0;
+
+                    addLog('✅ Connected to robot successfully!', 'success');
+                    updateConnectionStatus('Connected', currentUrl);
+
+                    // For relay server, send identification
+                    if (currentUrl.includes('relay') || currentUrl.includes('8765')) {
+                        const identifyMsg = {
+                            type: 'identify',
+                            client_type: 'controller',
+                            client_info: {
+                                name: 'Static IP Mobile Controller',
+                                user_agent: navigator.userAgent,
+                                timestamp: new Date().toISOString()
+                            }
+                        };
+                        socket.send(JSON.stringify(identifyMsg));
+                        addLog('🔐 Sent identification to relay server', 'info');
+                    }
+                };
+
+                socket.onmessage = function (event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleServerMessage(data);
+                    } catch (e) {
+                        // Handle plain text messages (for direct robot connection)
+                        addLog(`📨 Robot: ${event.data}`, 'success');
+                    }
+                };
+
+                socket.onclose = function (event) {
+                    isConnected = false;
+
+                    if (event.wasClean) {
+                        addLog('🔌 Connection closed cleanly', 'info');
+                        updateConnectionStatus('Disconnected');
+                    } else {
+                        addLog(`❌ Connection lost (code: ${event.code})`, 'error');
+
+                        if (!isConnecting && reconnectAttempts < maxReconnectAttempts) {
+                            attemptReconnect();
+                        } else {
+                            updateConnectionStatus('Disconnected');
+                            isConnecting = false;
+                        }
+                    }
+                };
+
+                socket.onerror = function (error) {
+                    addLog('💥 WebSocket error occurred', 'error');
+                    console.error('WebSocket error:', error);
+                };
+
+            } catch (error) {
+                addLog(`❌ Failed to create WebSocket: ${error.message}`, 'error');
+                isConnecting = false;
+                updateConnectionStatus('Disconnected');
+            }
+        }
+
+        function handleServerMessage(data) {
+            switch (data.type) {
+                case 'welcome':
+                    addLog(`🎉 ${data.message}`, 'success');
+                    break;
+                case 'connection_status':
+                    const robotStatus = data.robot_connected ? 'Robot Connected' : 'Robot Disconnected';
+                    addLog(`📊 Status: ${robotStatus}`, 'info');
+                    break;
+                case 'response':
+                    addLog(`🤖 Robot: ${data.message}`, 'success');
+                    break;
+                case 'error':
+                    addLog(`❌ Error: ${data.message}`, 'error');
+                    break;
+                case 'server_shutdown':
+                    addLog('🛑 Server shutting down', 'warning');
+                    break;
+                default:
+                    addLog(`📨 ${data.type}: ${data.message || 'Unknown message'}`, 'info');
+            }
+        }
+
+        function attemptReconnect() {
+            reconnectAttempts++;
+            addLog(`🔄 Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'warning');
+
+            setTimeout(() => {
+                if (!isConnected) {
+                    connectWebSocket();
+                }
+            }, reconnectDelay);
+
+            reconnectDelay = Math.min(reconnectDelay * 1.5, 30000); // Max 30 seconds
+        }
+
+        function sendCommand(command) {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                addLog('❌ Not connected to robot', 'error');
+                return;
+            }
+
+            try {
+                // For relay server
+                if (currentUrl.includes('relay') || document.querySelector('input[value="relay"]:checked')) {
+                    const message = {
+                        type: 'robot_command',
+                        command: command,
+                        timestamp: new Date().toISOString()
+                    };
+                    socket.send(JSON.stringify(message));
+                } else {
+                    // For direct connection
+                    socket.send(command);
+                }
+
+                addLog(`📤 Sent command: ${command}`, 'info');
+            } catch (error) {
+                addLog(`❌ Failed to send command: ${error.message}`, 'error');
+            }
+        }
+
+        function emergencyStop() {
+            addLog('🚨 EMERGENCY STOP ACTIVATED', 'error');
+            sendCommand('stop');
+
+            // Try to send stop command multiple times
+            setTimeout(() => sendCommand('q'), 100);
+            setTimeout(() => sendCommand('emergency_stop'), 200);
+        }
+
+        function disconnect() {
+            if (socket) {
+                isConnecting = false;
+                socket.close();
+                socket = null;
+                addLog('🔌 Manually disconnected', 'info');
+                updateConnectionStatus('Disconnected');
+            }
+        }
+
+        // Auto-update IP detection periodically
+        setInterval(detectIPAddresses, 30000);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (socket) {
+                socket.close();
+            }
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            if (!isConnected) return;
+
+            switch (event.key.toLowerCase()) {
+                case 'w': sendCommand('walk'); break;
+                case 's': sendCommand('sit'); break;
+                case 'a': sendCommand('left'); break;
+                case 'd': sendCommand('right'); break;
+                case 'x': sendCommand('stand'); break;
+                case 'q': emergencyStop(); break;
+                case ' ':
+                    event.preventDefault();
+                    sendCommand('distance');
+                    break;
+            }
+        });
+
+        // Add connection status indicator
+        addLog('🚀 Static IP Robot Control Interface loaded', 'success');
+        addLog('💡 Select connection type and click Connect', 'info');
+    </script>
+</body>
+
+</html>

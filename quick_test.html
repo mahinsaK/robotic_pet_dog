@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Quick Test</title>
+</head>
+
+<body>
+    <h1>Quick WebSocket Test</h1>
+    <div id="log"></div>
+    <script>
+        const log = document.getElementById('log');
+
+        function addLog(msg) {
+            log.innerHTML += msg + '<br>';
+        }
+
+        // Test port 9999 (simple server)
+        addLog('Testing ws://localhost:9999...');
+        try {
+            const ws = new WebSocket('ws://localhost:9999');
+            ws.onopen = () => addLog('✅ Port 9999 - CONNECTED!');
+            ws.onmessage = (e) => addLog('📨 Port 9999: ' + e.data);
+            ws.onerror = () => addLog('❌ Port 9999 - ERROR');
+            ws.onclose = () => addLog('🔌 Port 9999 - CLOSED');
+        } catch (e) {
+            addLog('❌ Port 9999 - EXCEPTION: ' + e.message);
+        }
+
+        // Test port 8765 (robot server)
+        setTimeout(() => {
+            addLog('Testing ws://localhost:8765...');
+            try {
+                const ws2 = new WebSocket('ws://localhost:8765');
+                ws2.onopen = () => addLog('✅ Port 8765 - CONNECTED!');
+                ws2.onmessage = (e) => addLog('📨 Port 8765: ' + e.data);
+                ws2.onerror = () => addLog('❌ Port 8765 - ERROR');
+                ws2.onclose = () => addLog('🔌 Port 8765 - CLOSED');
+            } catch (e) {
+                addLog('❌ Port 8765 - EXCEPTION: ' + e.message);
+            }
+        }, 1000);
+    </script>
+</body>
+
+</html>

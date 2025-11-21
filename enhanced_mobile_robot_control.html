@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🤖 Enhanced Robot Dog Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg, #fff, #a8e6ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 15px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .status.connected {
+            background: rgba(40, 167, 69, 0.8);
+            border: 2px solid rgba(40, 167, 69, 1);
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .status.disconnected {
+            background: rgba(220, 53, 69, 0.8);
+            border: 2px solid rgba(220, 53, 69, 1);
+            box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
+        }
+
+        .status.running {
+            background: rgba(23, 162, 184, 0.8);
+            border: 2px solid rgba(23, 162, 184, 1);
+            box-shadow: 0 0 20px rgba(23, 162, 184, 0.3);
+        }
+
+        .connection-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .connection-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .connection-input:focus {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+        }
+
+        .connection-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .connection-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Joystick Styles */
+        .joystick-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .joystick-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #a8e6ff;
+        }
+
+        .joystick {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            margin: 0 auto;
+            touch-action: none;
+            cursor: pointer;
+            box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.1);
+        }
+
+        .joystick-handle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+            transition: all 0.1s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .joystick-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Control Buttons */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 18px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-height: 80px;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-stand { background: linear-gradient(135deg, #28a745, #20c997); }
+        .btn-sit { background: linear-gradient(135deg, #17a2b8, #6f42c1); }
+        .btn-walk { background: linear-gradient(135deg, #007bff, #6610f2); }
+        .btn-backward { background: linear-gradient(135deg, #fd7e14, #e83e8c); }
+        .btn-distance { background: linear-gradient(135deg, #20c997, #28a745); }
+        .btn-sensors { background: linear-gradient(135deg, #6f42c1, #e83e8c); }
+        .btn-stop { background: linear-gradient(135deg, #dc3545, #fd7e14); }
+        .btn-connect { background: linear-gradient(135deg, #28a745, #20c997); flex: 1; }
+        .btn-disconnect { background: linear-gradient(135deg, #dc3545, #fd7e14); flex: 1; }
+
+        /* Sensor Display */
+        .sensor-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sensor-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #a8e6ff;
+        }
+
+        .sensor-value {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 5px 0;
+        }
+
+        .output {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 15px;
+            height: 180px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .output-line {
+            margin: 3px 0;
+            line-height: 1.4;
+        }
+
+        .output-line.robot { color: #00d4ff; }
+        .output-line.response { color: #00ff88; font-weight: bold; }
+        .output-line.error { color: #ff6b6b; font-weight: bold; }
+        .output-line.joystick { color: #ffaa00; }
+
+        .timestamp {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 10px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Haptic feedback */
+        .btn:active, .joystick-handle:active {
+            animation: buttonPress 0.1s ease;
+        }
+
+        @keyframes buttonPress {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 380px) {
+            .container { padding: 15px; }
+            .btn { padding: 15px; font-size: 14px; }
+            .joystick { width: 160px; height: 160px; }
+            .joystick-handle { width: 50px; height: 50px; }
+        }
+
+        /* Control Mode Toggle */
+        .control-mode {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 5px;
+            margin: 15px 0;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Enhanced Robot Dog</h1>
+            <div style="font-size: 14px; opacity: 0.8;">Advanced Control Interface</div>
+        </div>
+
+        <div class="connection-section">
+            <input type="text" id="serverUrl" class="connection-input" 
+                   placeholder="ws://robot-ip:8765" value="ws://10.196.176.48:8765">
+            <div class="connection-buttons">
+                <button class="btn btn-connect" onclick="connect()" id="connectBtn">
+                    <div>🔌</div>
+                    <div>Connect</div>
+                </button>
+                <button class="btn btn-disconnect" onclick="disconnect()" id="disconnectBtn" disabled>
+                    <div>🔌</div>
+                    <div>Disconnect</div>
+                </button>
+            </div>
+        </div>
+
+        <div class="status disconnected" id="connectionStatus">
+            Disconnected
+        </div>
+
+        <div class="status" id="robotStatus" style="display: none;">
+            Robot Status: Unknown
+        </div>
+
+        <!-- Control Mode Toggle -->
+        <div class="control-mode">
+            <button class="mode-btn active" id="joystickModeBtn" onclick="setControlMode('joystick')">
+                🕹️ Joystick
+            </button>
+            <button class="mode-btn" id="buttonModeBtn" onclick="setControlMode('buttons')">
+                🎮 Buttons
+            </button>
+        </div>
+
+        <!-- Joystick Control -->
+        <div class="joystick-container" id="joystickContainer">
+            <div class="joystick-title">🕹️ Movement Control</div>
+            <div class="joystick" id="joystick">
+                <div class="joystick-handle" id="joystickHandle"></div>
+            </div>
+            <div class="joystick-info" id="joystickInfo">
+                Position: (0, 0)
+            </div>
+        </div>
+
+        <!-- Button Controls -->
+        <div class="controls" id="buttonControls" style="display: none;">
+            <button class="btn btn-stand" onclick="sendCommand('stand')" disabled>
+                <div>🏠</div>
+                <div>Stand</div>
+            </button>
+            <button class="btn btn-sit" onclick="sendCommand('sit')" disabled>
+                <div>🪑</div>
+                <div>Sit</div>
+            </button>
+            <button class="btn btn-walk" onclick="sendCommand('forward')" disabled>
+                <div>⬆️</div>
+                <div>Forward</div>
+            </button>
+            <button class="btn btn-backward" onclick="sendCommand('backward')" disabled>
+                <div>⬇️</div>
+                <div>Backward</div>
+            </button>
+            <button class="btn btn-distance" onclick="sendCommand('distance')" disabled>
+                <div>📏</div>
+                <div>Distance</div>
+            </button>
+            <button class="btn btn-sensors" onclick="sendCommand('sensors')" disabled>
+                <div>📊</div>
+                <div>Sensors</div>
+            </button>
+            <button class="btn btn-stop full-width" onclick="sendCommand('stop')" disabled>
+                <div>🛑</div>
+                <div>Emergency Stop</div>
+            </button>
+        </div>
+
+        <!-- Sensor Display -->
+        <div class="sensor-display" id="sensorDisplay" style="display: none;">
+            <div class="sensor-title">📊 Live Sensor Data</div>
+            <div class="sensor-value" id="distanceValue">Distance: -- cm</div>
+            <div class="sensor-value" id="gyroValue">Gyro: X:-- Y:-- Z:--</div>
+            <div class="sensor-value" id="accelValue">Accel: X:-- Y:-- Z:--</div>
+        </div>
+
+        <div class="output" id="output">
+            <div class="output-line">🤖 Enhanced Robot Dog Control Ready</div>
+            <div class="output-line">📱 Choose control mode and connect to robot</div>
+        </div>
+    </div>
+
+    <script>
+        let websocket = null;
+        let isConnected = false;
+        let currentControlMode = 'joystick';
+        let joystickActive = false;
+        let joystickPosition = { x: 0, y: 0 };
+        let joystickUpdateTimer = null;
+
+        // Joystick setup
+        const joystick = document.getElementById('joystick');
+        const joystickHandle = document.getElementById('joystickHandle');
+        const joystickInfo = document.getElementById('joystickInfo');
+
+        function setControlMode(mode) {
+            currentControlMode = mode;
+            
+            // Update UI
+            document.getElementById('joystickModeBtn').classList.toggle('active', mode === 'joystick');
+            document.getElementById('buttonModeBtn').classList.toggle('active', mode === 'buttons');
+            
+            document.getElementById('joystickContainer').style.display = mode === 'joystick' ? 'block' : 'none';
+            document.getElementById('buttonControls').style.display = mode === 'buttons' ? 'grid' : 'none';
+            
+            addToOutput(`🎮 Control mode: ${mode.toUpperCase()}`, 'robot');
+        }
+
+        function initJoystick() {
+            let isDragging = false;
+            let rect = joystick.getBoundingClientRect();
+            const maxDistance = rect.width / 2 - 30; // Handle radius
+
+            function updateJoystickPosition(clientX, clientY) {
+                rect = joystick.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                let deltaX = clientX - centerX;
+                let deltaY = centerY - clientY; // Invert Y for intuitive control
+                
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                if (distance > maxDistance) {
+                    deltaX = (deltaX / distance) * maxDistance;
+                    deltaY = (deltaY / distance) * maxDistance;
+                }
+                
+                // Normalize to -1 to 1 range
+                joystickPosition.x = deltaX / maxDistance;
+                joystickPosition.y = deltaY / maxDistance;
+                
+                // Update handle position
+                joystickHandle.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${-deltaY}px))`;
+                
+                // Update info display
+                joystickInfo.textContent = `Position: (${joystickPosition.x.toFixed(2)}, ${joystickPosition.y.toFixed(2)})`;
+                
+                // Send joystick command if connected
+                if (isConnected && (Math.abs(joystickPosition.x) > 0.1 || Math.abs(joystickPosition.y) > 0.1)) {
+                    sendJoystickCommand();
+                }
+            }
+
+            function resetJoystick() {
+                joystickPosition = { x: 0, y: 0 };
+                joystickHandle.style.transform = 'translate(-50%, -50%)';
+                joystickInfo.textContent = 'Position: (0, 0)';
+                
+                // Send stop command
+                if (isConnected) {
+                    sendCommand('stop');
+                }
+            }
+
+            // Mouse events
+            joystick.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                updateJoystickPosition(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    updateJoystickPosition(e.clientX, e.clientY);
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    resetJoystick();
+                }
+            });
+
+            // Touch events
+            joystick.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isDragging = true;
+                const touch = e.touches[0];
+                updateJoystickPosition(touch.clientX, touch.clientY);
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    updateJoystickPosition(touch.clientX, touch.clientY);
+                }
+            });
+
+            document.addEventListener('touchend', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    isDragging = false;
+                    resetJoystick();
+                }
+            });
+        }
+
+        function sendJoystickCommand() {
+            if (!isConnected || !websocket) return;
+            
+            const message = {
+                type: 'joystick',
+                x: joystickPosition.x,
+                y: joystickPosition.y
+            };
+
+            try {
+                websocket.send(JSON.stringify(message));
+                addToOutput(`🕹️ Joystick: (${joystickPosition.x.toFixed(2)}, ${joystickPosition.y.toFixed(2)})`, 'joystick');
+            } catch (error) {
+                addToOutput(`❌ Failed to send joystick data: ${error.message}`, 'error');
+            }
+        }
+
+        function addToOutput(message, type = 'info') {
+            const output = document.getElementById('output');
+            const line = document.createElement('div');
+            line.className = `output-line ${type}`;
+
+            const timestamp = new Date().toLocaleTimeString();
+            line.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+            
+            // Keep only last 50 lines
+            while (output.children.length > 50) {
+                output.removeChild(output.firstChild);
+            }
+        }
+
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const controlButtons = document.querySelectorAll('.controls .btn');
+
+            if (status === 'connected') {
+                isConnected = true;
+                statusElement.textContent = '✅ Connected to Enhanced Robot Server';
+                statusElement.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                controlButtons.forEach(btn => btn.disabled = false);
+                
+                // Show sensor display
+                document.getElementById('sensorDisplay').style.display = 'block';
+                
+                // Start sensor updates
+                startSensorUpdates();
+            } else {
+                isConnected = false;
+                statusElement.textContent = '❌ Disconnected from Server';
+                statusElement.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                controlButtons.forEach(btn => btn.disabled = true);
+                
+                // Hide displays
+                document.getElementById('robotStatus').style.display = 'none';
+                document.getElementById('sensorDisplay').style.display = 'none';
+                
+                // Stop sensor updates
+                stopSensorUpdates();
+            }
+        }
+
+        function updateRobotStatus(status) {
+            const robotStatusElement = document.getElementById('robotStatus');
+            robotStatusElement.style.display = 'block';
+            robotStatusElement.textContent = `🤖 Robot: ${status.toUpperCase()}`;
+
+            if (status === 'running') {
+                robotStatusElement.className = 'status running';
+            } else {
+                robotStatusElement.className = 'status disconnected';
+            }
+        }
+
+        function updateSensorDisplay(sensorData) {
+            if (sensorData.distance !== undefined) {
+                document.getElementById('distanceValue').textContent = `Distance: ${sensorData.distance} cm`;
+            }
+            
+            if (sensorData.mpu) {
+                const gyro = sensorData.mpu.gyro;
+                const accel = sensorData.mpu.accel;
+                
+                document.getElementById('gyroValue').textContent = 
+                    `Gyro: X:${gyro.x.toFixed(2)} Y:${gyro.y.toFixed(2)} Z:${gyro.z.toFixed(2)}`;
+                    
+                document.getElementById('accelValue').textContent = 
+                    `Accel: X:${accel.x.toFixed(2)} Y:${accel.y.toFixed(2)} Z:${accel.z.toFixed(2)}`;
+            }
+        }
+
+        let sensorUpdateInterval;
+
+        function startSensorUpdates() {
+            sensorUpdateInterval = setInterval(() => {
+                if (isConnected) {
+                    sendCommand('sensors');
+                }
+            }, 2000); // Update every 2 seconds
+        }
+
+        function stopSensorUpdates() {
+            if (sensorUpdateInterval) {
+                clearInterval(sensorUpdateInterval);
+                sensorUpdateInterval = null;
+            }
+        }
+
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+
+            if (!serverUrl) {
+                addToOutput('❌ Please enter server URL', 'error');
+                return;
+            }
+
+            addToOutput(`🔌 Connecting to ${serverUrl}...`);
+
+            try {
+                websocket = new WebSocket(serverUrl);
+
+                websocket.onopen = function(event) {
+                    addToOutput('✅ Connected to enhanced robot server!', 'response');
+                    updateConnectionStatus('connected');
+                };
+
+                websocket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === 'response') {
+                            const icon = data.success ? '✅' : '❌';
+                            addToOutput(`${icon} ${data.message}`, data.success ? 'response' : 'error');
+                            
+                            // Handle sensor data
+                            if (data.sensors) {
+                                updateSensorDisplay(data.sensors);
+                            }
+                            
+                            // Handle distance data
+                            if (data.distance !== undefined) {
+                                updateSensorDisplay({ distance: data.distance });
+                            }
+                            
+                        } else if (data.type === 'status') {
+                            addToOutput(`ℹ️ ${data.message}`, 'robot');
+                            if (data.robot_status) {
+                                updateRobotStatus(data.robot_status);
+                            }
+                        } else {
+                            addToOutput(`📨 ${data.message || JSON.stringify(data)}`, 'robot');
+                        }
+                    } catch (e) {
+                        addToOutput(`📨 ${event.data}`, 'robot');
+                    }
+                };
+
+                websocket.onclose = function(event) {
+                    addToOutput('🔌 Connection closed', 'error');
+                    updateConnectionStatus('disconnected');
+                    websocket = null;
+                };
+
+                websocket.onerror = function(error) {
+                    addToOutput('❌ Connection error - check server and network', 'error');
+                    updateConnectionStatus('disconnected');
+                };
+
+            } catch (error) {
+                addToOutput(`❌ Failed to connect: ${error.message}`, 'error');
+                updateConnectionStatus('disconnected');
+            }
+        }
+
+        function disconnect() {
+            if (websocket) {
+                websocket.close();
+                websocket = null;
+            }
+            updateConnectionStatus('disconnected');
+            addToOutput('🔌 Manually disconnected', 'robot');
+        }
+
+        function sendCommand(command) {
+            if (!isConnected || !websocket) {
+                addToOutput('❌ Not connected to server', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'robot_command',
+                command: command
+            };
+
+            try {
+                websocket.send(JSON.stringify(message));
+                addToOutput(`📤 Command sent: ${command.toUpperCase()}`);
+            } catch (error) {
+                addToOutput(`❌ Failed to send command: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            initJoystick();
+            setControlMode('joystick');
+            
+            // Auto-connect if URL is set to robot IP
+            const serverUrl = document.getElementById('serverUrl').value;
+            if (serverUrl && serverUrl.includes('10.196.176.48')) {
+                setTimeout(connect, 1000);
+            }
+        });
+
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (!isConnected) return;
+            
+            switch(event.key.toLowerCase()) {
+                case 'w': sendCommand('forward'); break;
+                case 's': sendCommand('backward'); break;
+                case 'a': sendCommand('left'); break;
+                case 'd': sendCommand('right'); break;
+                case ' ': sendCommand('stop'); break;
+                case 'q': sendCommand('stand'); break;
+                case 'e': sendCommand('sit'); break;
+            }
+        });
+    </script>
+</body>
+</html>

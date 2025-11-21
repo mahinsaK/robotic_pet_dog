@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🤖 Robot Dog Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: white;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 12px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .status.connected {
+            background: rgba(40, 167, 69, 0.8);
+            border: 2px solid rgba(40, 167, 69, 1);
+        }
+
+        .status.disconnected {
+            background: rgba(220, 53, 69, 0.8);
+            border: 2px solid rgba(220, 53, 69, 1);
+        }
+
+        .status.running {
+            background: rgba(23, 162, 184, 0.8);
+            border: 2px solid rgba(23, 162, 184, 1);
+        }
+
+        .connection-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .connection-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .connection-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .connection-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 18px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-height: 70px;
+            justify-content: center;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-stand { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+        .btn-sit { background: linear-gradient(135deg, #17a2b8, #6f42c1); color: white; }
+        .btn-walk { background: linear-gradient(135deg, #007bff, #6610f2); color: white; }
+        .btn-right { background: linear-gradient(135deg, #fd7e14, #e83e8c); color: white; }
+        .btn-left { background: linear-gradient(135deg, #6f42c1, #e83e8c); color: white; }
+        .btn-distance { background: linear-gradient(135deg, #20c997, #28a745); color: white; }
+        .btn-stop { background: linear-gradient(135deg, #dc3545, #fd7e14); color: white; }
+        .btn-connect { background: linear-gradient(135deg, #28a745, #20c997); color: white; flex: 1; }
+        .btn-disconnect { background: linear-gradient(135deg, #dc3545, #fd7e14); color: white; flex: 1; }
+
+        .output {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .output-line {
+            margin: 3px 0;
+            line-height: 1.4;
+        }
+
+        .output-line.robot { color: #00d4ff; }
+        .output-line.response { color: #00ff88; font-weight: bold; }
+        .output-line.error { color: #ff6b6b; font-weight: bold; }
+
+        .timestamp {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 10px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Haptic feedback simulation */
+        .btn:active {
+            animation: buttonPress 0.1s ease;
+        }
+
+        @keyframes buttonPress {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 350px) {
+            .container { padding: 15px; }
+            .btn { padding: 15px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Robot Dog Control</h1>
+            <div style="font-size: 14px; opacity: 0.8;">Mobile Control Interface</div>
+        </div>
+
+        <div class="connection-section">
+            <input type="text" id="serverUrl" class="connection-input" 
+                   placeholder="ws://robot-ip:8765" value="ws://10.236.10.48:8765">
+            <div class="connection-buttons">
+                <button class="btn btn-connect" onclick="connect()" id="connectBtn">
+                    <div>🔌</div>
+                    <div>Connect</div>
+                </button>
+                <button class="btn btn-disconnect" onclick="disconnect()" id="disconnectBtn" disabled>
+                    <div>🔌</div>
+                    <div>Disconnect</div>
+                </button>
+            </div>
+        </div>
+
+        <div class="status disconnected" id="connectionStatus">
+            Disconnected
+        </div>
+
+        <div class="status" id="robotStatus" style="display: none;">
+            Robot Status: Unknown
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-stand" onclick="sendCommand('stand')" disabled>
+                <div>🏠</div>
+                <div>Stand</div>
+            </button>
+            <button class="btn btn-sit" onclick="sendCommand('sit')" disabled>
+                <div>🪑</div>
+                <div>Sit</div>
+            </button>
+            <button class="btn btn-walk" onclick="sendCommand('walk')" disabled>
+                <div>🚶</div>
+                <div>Walk</div>
+            </button>
+            <button class="btn btn-right" onclick="sendCommand('right')" disabled>
+                <div>↪️</div>
+                <div>Turn Right</div>
+            </button>
+            <button class="btn btn-left" onclick="sendCommand('left')" disabled>
+                <div>↩️</div>
+                <div>Turn Left</div>
+            </button>
+            <button class="btn btn-distance" onclick="sendCommand('distance')" disabled>
+                <div>📏</div>
+                <div>Distance</div>
+            </button>
+            <button class="btn btn-stop full-width" onclick="sendCommand('q')" disabled>
+                <div>🛑</div>
+                <div>Emergency Stop</div>
+            </button>
+        </div>
+
+        <div class="output" id="output">
+            <div class="output-line">🤖 Robot Dog Mobile Control Ready</div>
+            <div class="output-line">📱 Enter server URL and tap Connect</div>
+        </div>
+    </div>
+
+    <script>
+        let websocket = null;
+        let isConnected = false;
+
+        function addToOutput(message, type = 'info') {
+            const output = document.getElementById('output');
+            const line = document.createElement('div');
+            line.className = `output-line ${type}`;
+
+            const timestamp = new Date().toLocaleTimeString();
+            line.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+            
+            // Keep only last 50 lines for performance
+            while (output.children.length > 50) {
+                output.removeChild(output.firstChild);
+            }
+        }
+
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const controlButtons = document.querySelectorAll('.controls .btn');
+
+            if (status === 'connected') {
+                isConnected = true;
+                statusElement.textContent = '✅ Connected to Robot Server';
+                statusElement.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                controlButtons.forEach(btn => btn.disabled = false);
+            } else {
+                isConnected = false;
+                statusElement.textContent = '❌ Disconnected from Server';
+                statusElement.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                controlButtons.forEach(btn => btn.disabled = true);
+                
+                // Hide robot status when disconnected
+                document.getElementById('robotStatus').style.display = 'none';
+            }
+        }
+
+        function updateRobotStatus(status) {
+            const robotStatusElement = document.getElementById('robotStatus');
+            robotStatusElement.style.display = 'block';
+            robotStatusElement.textContent = `🤖 Robot: ${status.toUpperCase()}`;
+
+            if (status === 'running') {
+                robotStatusElement.className = 'status running';
+            } else {
+                robotStatusElement.className = 'status disconnected';
+            }
+        }
+
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+
+            if (!serverUrl) {
+                addToOutput('❌ Please enter server URL', 'error');
+                return;
+            }
+
+            addToOutput(`🔌 Connecting to ${serverUrl}...`);
+
+            try {
+                websocket = new WebSocket(serverUrl);
+
+                websocket.onopen = function(event) {
+                    addToOutput('✅ Connected to robot server!', 'response');
+                    updateConnectionStatus('connected');
+                };
+
+                websocket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === 'response') {
+                            const icon = data.success ? '✅' : '❌';
+                            addToOutput(`${icon} ${data.message}`, data.success ? 'response' : 'error');
+                        } else if (data.type === 'status') {
+                            addToOutput(`ℹ️ ${data.message}`, 'robot');
+                            if (data.robot_status) {
+                                updateRobotStatus(data.robot_status);
+                            }
+                        } else {
+                            addToOutput(`📨 ${data.message || JSON.stringify(data)}`, 'robot');
+                        }
+                    } catch (e) {
+                        addToOutput(`📨 ${event.data}`, 'robot');
+                    }
+                };
+
+                websocket.onclose = function(event) {
+                    addToOutput('🔌 Connection closed', 'error');
+                    updateConnectionStatus('disconnected');
+                    websocket = null;
+                };
+
+                websocket.onerror = function(error) {
+                    addToOutput('❌ Connection error - check server and network', 'error');
+                    updateConnectionStatus('disconnected');
+                };
+
+            } catch (error) {
+                addToOutput(`❌ Failed to connect: ${error.message}`, 'error');
+                updateConnectionStatus('disconnected');
+            }
+        }
+
+        function disconnect() {
+            if (websocket) {
+                websocket.close();
+                websocket = null;
+            }
+            updateConnectionStatus('disconnected');
+            addToOutput('🔌 Manually disconnected', 'robot');
+        }
+
+        function sendCommand(command) {
+            if (!isConnected || !websocket) {
+                addToOutput('❌ Not connected to server', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'robot_command',
+                command: command
+            };
+
+            try {
+                websocket.send(JSON.stringify(message));
+                addToOutput(`📤 Command sent: ${command.toUpperCase()}`);
+            } catch (error) {
+                addToOutput(`❌ Failed to send command: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-connect on page load if URL is set
+        window.addEventListener('load', function() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            if (serverUrl && serverUrl !== 'ws://10.236.10.48:8765') {
+                // Only auto-connect if URL has been customized
+                setTimeout(connect, 1000);
+            }
+        });
+
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

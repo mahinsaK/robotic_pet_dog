@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>🐕 SpotMicro Robot Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f8ff;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .connecting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            background: #004085;
+            transform: translateY(0px);
+        }
+
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .emergency {
+            background: #dc3545 !important;
+        }
+
+        .emergency:hover {
+            background: #c82333 !important;
+        }
+
+        .log {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            height: 300px;
+            padding: 15px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .connection-setup {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            border: 2px solid #ced4da;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .info {
+            color: #0066cc;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+
+        .warning {
+            color: #ffc107;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🐕 SpotMicro Robot Control</h1>
+
+        <div class="connection-setup">
+            <h3>🔗 Connection Setup</h3>
+            <input type="text" id="serverUrl" value="ws://localhost:8765" placeholder="WebSocket URL">
+            <button onclick="connect()" id="connectBtn">Connect to Robot</button>
+            <button onclick="disconnect()" id="disconnectBtn" disabled>Disconnect</button>
+        </div>
+
+        <div id="status" class="status disconnected">
+            ❌ Disconnected - Click "Connect to Robot" to start
+        </div>
+
+        <div class="controls">
+            <button onclick="sendCommand('stand')" disabled id="standBtn">🧍 Stand</button>
+            <button onclick="sendCommand('sit')" disabled id="sitBtn">🪑 Sit</button>
+            <button onclick="sendCommand('walk')" disabled id="walkBtn">🚶 Walk Forward</button>
+
+            <button onclick="sendCommand('left')" disabled id="leftBtn">⬅️ Turn Left</button>
+            <button onclick="sendCommand('q')" disabled id="stopBtn" class="emergency">🛑 Emergency Stop</button>
+            <button onclick="sendCommand('right')" disabled id="rightBtn">➡️ Turn Right</button>
+
+            <button onclick="sendCommand('backward')" disabled id="backBtn">🔙 Walk Backward</button>
+            <button onclick="sendCommand('distance')" disabled id="distBtn">📏 Check Distance</button>
+            <button onclick="clearLog()">🧹 Clear Log</button>
+        </div>
+
+        <div>
+            <h3>📋 Command Log</h3>
+            <div class="log" id="log"></div>
+        </div>
+
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; font-size: 14px;">
+            <strong>🎮 Keyboard Shortcuts:</strong><br>
+            W=Walk, S=Sit, A=Left, D=Right, X=Stand, Q=Stop, Space=Distance, B=Backward
+        </div>
+
+        <div style="margin-top: 10px; font-size: 12px; color: #666; text-align: center;">
+            <strong>Valid Commands:</strong> walk, backward, right, left, stand, sit, distance, q<br>
+            <strong>Features:</strong> Obstacle avoidance, Speed control, Multi-client support
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let isConnected = false;
+
+        function updateStatus(status, message = '') {
+            const statusDiv = document.getElementById('status');
+            const buttons = document.querySelectorAll('button:not(#connectBtn):not(#disconnectBtn):not([onclick="clearLog()"])');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (status === 'connected') {
+                statusDiv.className = 'status connected';
+                statusDiv.textContent = `✅ Connected to Robot ${message}`;
+                isConnected = true;
+                buttons.forEach(btn => btn.disabled = false);
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else if (status === 'connecting') {
+                statusDiv.className = 'status connecting';
+                statusDiv.textContent = `🔄 Connecting... ${message}`;
+                isConnected = false;
+                buttons.forEach(btn => btn.disabled = true);
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = true;
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = `❌ Disconnected ${message}`;
+                isConnected = false;
+                buttons.forEach(btn => btn.disabled = true);
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const className = type;
+            logDiv.innerHTML += `<div class="${className}">[${time}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function connect() {
+            const url = document.getElementById('serverUrl').value.trim();
+
+            if (!url) {
+                log('❌ Please enter a WebSocket URL', 'error');
+                return;
+            }
+
+            if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+                log('❌ WebSocket URL must start with ws:// or wss://', 'error');
+                return;
+            }
+
+            updateStatus('connecting', `to ${url}`);
+            log(`🔄 Connecting to ${url}...`, 'info');
+
+            try {
+                socket = new WebSocket(url);
+
+                socket.onopen = function (event) {
+                    updateStatus('connected', `(${url})`);
+                    log(`✅ Successfully connected to robot!`, 'success');
+                    log(`🤖 Robot server ready for commands`, 'info');
+                };
+
+                socket.onmessage = function (event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'response') {
+                            log(`🤖 Robot: ${data.message}`, 'success');
+                        } else if (data.type === 'status') {
+                            log(`📊 Status: ${data.message}`, 'info');
+                        } else if (data.type === 'error') {
+                            log(`💥 Error: ${data.message}`, 'error');
+                        } else {
+                            log(`📨 Robot: ${event.data}`, 'success');
+                        }
+                    } catch (e) {
+                        log(`📨 Robot: ${event.data}`, 'success');
+                    }
+                };
+
+                socket.onclose = function (event) {
+                    updateStatus('disconnected', '(Connection closed)');
+                    log(`❌ Connection closed (Code: ${event.code})`, 'error');
+                    socket = null;
+                };
+
+                socket.onerror = function (error) {
+                    updateStatus('disconnected', '(Connection error)');
+                    log(`💥 WebSocket error occurred`, 'error');
+                    console.error('WebSocket error:', error);
+                };
+
+            } catch (error) {
+                updateStatus('disconnected', '(Failed to create connection)');
+                log(`❌ Failed to create WebSocket: ${error.message}`, 'error');
+            }
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.close();
+                log(`🔌 Manually disconnected`, 'warning');
+            }
+        }
+
+        function sendCommand(command) {
+            if (!isConnected || !socket || socket.readyState !== WebSocket.OPEN) {
+                log(`❌ Not connected! Please connect to robot first.`, 'error');
+                return;
+            }
+
+            log(`📤 Sending command: ${command}`, 'info');
+
+            // Send command in the format expected by p12-6_websocket.py
+            const message = {
+                type: 'robot_command',
+                command: command,
+                timestamp: new Date().toISOString()
+            };
+
+            socket.send(JSON.stringify(message));
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            log('🧹 Log cleared', 'info');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function (event) {
+            if (!isConnected) return;
+
+            // Don't trigger shortcuts if user is typing in input field
+            if (event.target.tagName.toLowerCase() === 'input') return;
+
+            const key = event.key.toLowerCase();
+            const commands = {
+                'w': 'walk',
+                's': 'sit',
+                'a': 'left',
+                'd': 'right',
+                'x': 'stand',
+                'q': 'q',
+                'b': 'backward',
+                ' ': 'distance'
+            };
+
+            if (commands[key]) {
+                event.preventDefault();
+                sendCommand(commands[key]);
+            }
+        });
+
+        // Auto-setup on page load
+        window.onload = function () {
+            log('🚀 SpotMicro Robot Control Interface loaded', 'info');
+            log('💡 Click "Connect to Robot" to start controlling your SpotMicro', 'info');
+            log('🔗 Make sure your robot server is running on ws://localhost:8765', 'warning');
+        };
+    </script>
+</body>
+
+</html>
